@@ -19,7 +19,6 @@
     .hospital-container { max-height: 400px; overflow-y: auto; border: 1px solid #E5E7EB; border-radius: 0.5rem; padding: 1rem; background: white; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05); }
     ::-webkit-scrollbar { width: 8px; }
     ::-webkit-scrollbar-thumb { background-color: rgba(37, 99, 235, 0.4); border-radius: 9999px; }
-    /* Progresso */
     .progress-track { background: #e6f0ff; border-radius: 9999px; height: 14px; overflow: hidden; }
     .progress-fill { height: 100%; width: 0%; border-radius: 9999px; background: linear-gradient(90deg,#60a5fa,#2563eb); transition: width 300ms ease; }
     .small-muted { color:#6b7280; font-size:0.875rem; }
@@ -124,7 +123,24 @@
         <div><label class="block text-sm font-medium text-gray-700 mb-1">Usuário Login</label><input id="username" type="text" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:border-blue-500 focus:ring focus:ring-blue-200 transition"></div>
         <div><label class="block text-sm font-medium text-gray-700 mb-1">Senha Login</label><input id="password" type="password" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:border-blue-500 focus:ring focus:ring-blue-200 transition"></div>
         <div><label class="block text-sm font-medium text-gray-700 mb-1">Email Destinatário</label><input id="email" type="email" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:border-blue-500 focus:ring focus:ring-blue-200 transition"></div>
-        <div><label class="block text-sm font-medium text-gray-700 mb-1">Horário Automático</label><input id="schedule" type="datetime-local" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:border-blue-500 focus:ring focus:ring-blue-200 transition"></div>
+        
+        <!-- AGENDAMENTO RECORRENTE -->
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Agendamento Recorrente</label>
+          <div class="flex gap-3">
+            <select id="schedule-day" class="flex-1 px-4 py-2 border border-gray-300 rounded-md focus:border-blue-500 focus:ring focus:ring-blue-200 transition">
+              <option value="0">Domingo</option>
+              <option value="1">Segunda-feira</option>
+              <option value="2" selected>Terça-feira</option>
+              <option value="3">Quarta-feira</option>
+              <option value="4">Quinta-feira</option>
+              <option value="5">Sexta-feira</option>
+              <option value="6">Sábado</option>
+            </select>
+            <input id="schedule-time" type="time" value="13:00" class="flex-1 px-4 py-2 border border-gray-300 rounded-md focus:border-blue-500 focus:ring focus:ring-blue-200 transition">
+          </div>
+          <p class="text-xs text-gray-500 mt-1">Ex: Toda terça-feira às 13:00</p>
+        </div>
       </div>
       <div class="mt-6 flex justify-end space-x-3">
         <button onclick="toggleConfigModal()" class="px-6 py-2 rounded-md bg-gray-200 text-gray-800 hover:bg-gray-300 transition">Cancelar</button>
@@ -150,15 +166,15 @@
     </div>
   </div>
 
-  <!-- Modal Escolher Período -->
+  <!-- Modal Período Customizado -->
   <div id="custom-date-modal" class="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center hidden modal opacity-0 scale-95 z-50">
     <div class="glass rounded-2xl p-8 max-w-md w-full shadow-2xl border border-green-100">
       <h3 class="text-xl font-bold text-green-800 mb-6 flex items-center">
         <i class="fas fa-calendar-alt mr-2 text-green-600"></i> Escolher Período
       </h3>
       <div class="space-y-4">
-        <div><label class="block text-sm font-medium text-gray-700 mb-1">Data Início</label><input id="custom-start" type="date" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:border-green-500 focus:ring focus:ring-green-200 transition"></div>
-        <div><label class="block text-sm font-medium text-gray-700 mb-1">Data Fim</label><input id="custom-end" type="date" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:border-green-500 focus:ring focus:ring-green-200 transition"></div>
+        <div><label class="block text-sm font-medium text-gray-700 mb-1">Data Inicial</label><input id="custom-start" type="date" class="w-full px-4 py-2 border border-gray-300 rounded-md"></div>
+        <div><label class="block text-sm font-medium text-gray-700 mb-1">Data Final</label><input id="custom-end" type="date" class="w-full px-4 py-2 border border-gray-300 rounded-md"></div>
       </div>
       <div class="mt-6 flex justify-end space-x-3">
         <button onclick="toggleCustomDateModal()" class="px-6 py-2 rounded-md bg-gray-200 text-gray-800 hover:bg-gray-300 transition">Cancelar</button>
@@ -168,93 +184,89 @@
   </div>
 
   <script>
-    // Ajuste a API_URL para o backend real (ex.: http://localhost:5000/api)
     const API_URL = 'https://lavanderia-backend-4.onrender.com/api';
+    let hospitals = [], config = {}, evtSource = null, runInProgress = false;
 
-    let hospitals = [];
-    let config = { username: '', password: '', email: '', schedule: '' };
-    let evtSource = null;
-    let runInProgress = false;
-
+    // === MODAIS ===
     function toggleConfigModal() {
       const modal = document.getElementById('config-modal');
       modal.classList.toggle('hidden');
-      setTimeout(() => modal.classList.toggle('opacity-0'), 10);
-      setTimeout(() => modal.classList.toggle('scale-95'), 10);
+      modal.classList.toggle('opacity-100');
+      modal.classList.toggle('scale-100');
+      if (!modal.classList.contains('hidden')) {
+        document.getElementById('username').value = config.username || '';
+        document.getElementById('password').value = config.password || '';
+        document.getElementById('email').value = config.email || '';
+        // Preenche agendamento recorrente
+        if (config.schedule && config.schedule.startsWith('cron[')) {
+          const params = config.schedule.slice(5, -1).trim();
+          const [day, time] = params.split(' ');
+          document.getElementById('schedule-day').value = day;
+          document.getElementById('schedule-time').value = time;
+        }
+      }
     }
 
     function toggleAddHospitalModal() {
       const modal = document.getElementById('add-hospital-modal');
       modal.classList.toggle('hidden');
-      setTimeout(() => modal.classList.toggle('opacity-0'), 10);
-      setTimeout(() => modal.classList.toggle('scale-95'), 10);
+      modal.classList.toggle('opacity-100');
+      modal.classList.toggle('scale-100');
     }
 
     function toggleCustomDateModal() {
       const modal = document.getElementById('custom-date-modal');
       modal.classList.toggle('hidden');
-      setTimeout(() => modal.classList.toggle('opacity-0'), 10);
-      setTimeout(() => modal.classList.toggle('scale-95'), 10);
-
-      const hoje = new Date();
-      const fim = new Date(hoje);
-      fim.setDate(hoje.getDate() - (hoje.getDay() || 7));
-      const inicio = new Date(fim);
-      inicio.setDate(fim.getDate() - 6);
-
-      document.getElementById('custom-start').value = inicio.toISOString().split('T')[0];
-      document.getElementById('custom-end').value = fim.toISOString().split('T')[0];
+      modal.classList.toggle('opacity-100');
+      modal.classList.toggle('scale-100');
     }
 
-    function copyToClipboard(text) {
-      navigator.clipboard.writeText(text).then(() => alert('Total copiado: ' + text));
-    }
-
+    // === DADOS ===
     function loadData() {
       fetch(`${API_URL}/data`)
         .then(res => res.json())
         .then(data => {
           hospitals = data.hospitals || [];
           config = data.config || config;
-          document.getElementById('username').value = config.username || '';
-          document.getElementById('password').value = config.password || '';
-          document.getElementById('email').value = config.email || '';
-          document.getElementById('schedule').value = config.schedule || '';
-          renderHospitals();
+          applyData();
         })
         .catch(err => console.error('Erro carregando dados:', err));
     }
 
-    function saveConfig() {
-  const scheduleValue = document.getElementById('schedule').value;
-  if (scheduleValue) {
-    const selected = new Date(scheduleValue);
-    const now = new Date();
-    if (selected <= now) {
-      alert('Escolha um horário futuro!');
-      return;
+    function applyData() {
+      renderHospitals();
     }
-  }
 
-  config.username = document.getElementById('username').value;
-  config.password = document.getElementById('password').value;
-  config.email = document.getElementById('email').value;
-  config.schedule = scheduleValue;
+    // === SALVAR CONFIG COM AGENDAMENTO RECORRENTE ===
+    function saveConfig() {
+      const day = document.getElementById('schedule-day').value;
+      const time = document.getElementById('schedule-time').value;
+      if (day && time) {
+        config.schedule = `cron[${day} ${time}]`;
+      } else {
+        config.schedule = null;
+      }
 
-  fetch(`${API_URL}/config`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(config)
-  })
-  .then(() => {
-    alert('Configurações salvas! Relatório agendado para: ' + (scheduleValue ? new Date(scheduleValue).toLocaleString() : 'não definido'));
-    toggleConfigModal();
-  })
-  .catch(e => {
-    console.error(e);
-    alert('Erro ao salvar config');
-  });
-}
+      config.username = document.getElementById('username').value;
+      config.password = document.getElementById('password').value;
+      config.email = document.getElementById('email').value;
+
+      fetch(`${API_URL}/config`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(config)
+      })
+      .then(() => {
+        const dayName = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'][day];
+        alert(`Agendado! Relatório será enviado TODAS as ${dayName}s às ${time}`);
+        toggleConfigModal();
+      })
+      .catch(e => {
+        console.error(e);
+        alert('Erro ao salvar config');
+      });
+    }
+
     function renderHospitals() {
       const list = document.getElementById('hospital-list');
       list.innerHTML = '';
@@ -303,7 +315,6 @@
       startSSERun({ mode: 'weekly' });
     }
 
-    // === SSE RUN CUSTOM ===
     function runCustomAutomation() {
       const start = document.getElementById('custom-start').value;
       const end = document.getElementById('custom-end').value;
@@ -314,11 +325,9 @@
     }
 
     function startSSERun(params = { mode: 'weekly' }) {
-      // montar query string
       const qs = new URLSearchParams(params).toString();
-      const url = `${API_URL.replace('/api','')}/api/run-stream?${qs}`; // keep base consistent
+      const url = `${API_URL.replace('/api','')}/api/run-stream?${qs}`;
 
-      // UI init
       runInProgress = true;
       document.getElementById('progress-wrapper').classList.remove('hidden');
       document.getElementById('progress-fill').style.width = '0%';
@@ -336,7 +345,6 @@
       let completed = [];
 
       evtSource.onmessage = function(e) {
-        // mensagens enviadas como JSON strings
         try {
           const msg = JSON.parse(e.data);
 
@@ -354,7 +362,6 @@
             document.getElementById('current-hospital').innerText = msg.hospital || '—';
             document.getElementById('progress-subtext').innerText = msg.status || '';
 
-            // adicionar entrada na lista de progresso se não existir
             const list = document.getElementById('progress-list');
             let item = document.getElementById(`p-${msg.idx}`);
             if (!item) {
@@ -367,13 +374,11 @@
               item.innerText = `${msg.idx}. ${msg.hospital} — ${msg.status}`;
             }
           } else if (msg.type === 'done') {
-            // recebe resultados completos no campo results
             evtSource.close();
             runInProgress = false;
             document.getElementById('progress-subtext').innerText = 'Finalizado';
             document.getElementById('btn-run').removeAttribute('disabled');
             document.getElementById('btn-custom').removeAttribute('disabled');
-            // renderizar resultados
             if (msg.results) {
               renderResults(msg.results, document.getElementById('results'));
             }
@@ -386,14 +391,13 @@
             alert('Erro durante execução: ' + msg.error);
           }
         } catch (err) {
-          console.error('Menssagem SSE inválida', e.data, err);
+          console.error('Mensagem SSE inválida', e.data, err);
         }
       };
 
       evtSource.onerror = function(err) {
         console.error('SSE error', err);
         document.getElementById('progress-subtext').innerText = 'Conexão perdida com o servidor.';
-        // não fechar automaticamente: deixe o servidor fechar ou usuário reconectar
       };
     }
 
@@ -436,7 +440,12 @@
       });
     }
 
-    // inicializa dados
+    function copyToClipboard(text) {
+      navigator.clipboard.writeText(text);
+      alert('Total copiado: ' + text);
+    }
+
+    // Inicializa
     loadData();
   </script>
 </body>
