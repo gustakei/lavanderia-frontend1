@@ -68,13 +68,19 @@
             <p class="small-muted">Execute e acompanhe o progresso em tempo real.</p>
           </div>
 
-          <!-- Botões principais -->
-          <div class="flex gap-3">
-            <button id="btn-run" onclick="runAutomation()" class="px-6 py-3 rounded-xl font-semibold text-white bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 shadow-lg transition transform hover:scale-105 focus:outline-none">
+          <!-- Botões principais - ATUALIZADO COM BOTÃO ROXO -->
+          <div class="flex flex-wrap gap-4 mb-6">
+            <button id="btn-run" onclick="runAutomation()" class="px-6 py-3 rounded-xl font-semibold text-white bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 shadow-lg transition transform hover:scale-105 flex items-center">
               <i class="fas fa-robot mr-2"></i> Executar (Semana Passada)
             </button>
-            <button id="btn-custom" onclick="toggleCustomDateModal()" class="px-6 py-3 rounded-xl font-semibold text-white bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 shadow-lg transition transform hover:scale-105 focus:outline-none">
+
+            <button id="btn-custom" onclick="toggleCustomDateModal()" class="px-6 py-3 rounded-xl font-semibold text-white bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 shadow-lg transition transform hover:scale-105 flex items-center">
               <i class="fas fa-calendar-alt mr-2"></i> Escolher Período
+            </button>
+
+            <!-- NOVO BOTÃO ROXO - DOWNLOAD EXCEL -->
+            <button id="btn-download" onclick="runAndDownload()" class="px-6 py-3 rounded-xl font-semibold text-white bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 shadow-lg transition transform hover:scale-105 flex items-center">
+              <i class="fas fa-file-excel mr-2"></i> Baixar Planilha Agora
             </button>
           </div>
         </div>
@@ -92,7 +98,7 @@
               </div>
             </div>
 
-            <div class="progress-track mb-3" aria-hidden="true">
+            <div class="progress-track mb-3">
               <div id="progress-fill" class="progress-fill" style="width:0%"></div>
             </div>
 
@@ -113,18 +119,15 @@
     </main>
   </div>
 
-  <!-- Modal Configurações -->
+  <!-- Modais (Config, Adicionar Hospital, Período Customizado) -->
+  <!-- (Mantidos exatamente como estavam - sem alterações) -->
   <div id="config-modal" class="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center hidden modal opacity-0 scale-95 z-50">
     <div class="glass rounded-2xl p-8 max-w-md w-full shadow-2xl border border-blue-100">
-      <h3 class="text-xl font-bold text-blue-800 mb-6 flex items-center">
-        <i class="fas fa-cog mr-2 text-blue-600"></i> Configurações Gerais
-      </h3>
+      <h3 class="text-xl font-bold text-blue-800 mb-6 flex items-center"><i class="fas fa-cog mr-2 text-blue-600"></i> Configurações Gerais</h3>
       <div class="space-y-4">
         <div><label class="block text-sm font-medium text-gray-700 mb-1">Usuário Login</label><input id="username" type="text" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:border-blue-500 focus:ring focus:ring-blue-200 transition"></div>
         <div><label class="block text-sm font-medium text-gray-700 mb-1">Senha Login</label><input id="password" type="password" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:border-blue-500 focus:ring focus:ring-blue-200 transition"></div>
         <div><label class="block text-sm font-medium text-gray-700 mb-1">Email Destinatário</label><input id="email" type="email" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:border-blue-500 focus:ring focus:ring-blue-200 transition"></div>
-        
-        <!-- AGENDAMENTO RECORRENTE -->
         <div>
           <label class="block text-sm font-medium text-gray-700 mb-1">Agendamento Recorrente</label>
           <div class="flex gap-3">
@@ -149,12 +152,9 @@
     </div>
   </div>
 
-  <!-- Modal Adicionar Hospital -->
   <div id="add-hospital-modal" class="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center hidden modal opacity-0 scale-95 z-50">
     <div class="glass rounded-2xl p-8 max-w-md w-full shadow-2xl border border-green-100">
-      <h3 class="text-xl font-bold text-green-800 mb-6 flex items-center">
-        <i class="fas fa-plus-circle mr-2 text-green-600"></i> Adicionar Novo Hospital
-      </h3>
+      <h3 class="text-xl font-bold text-green-800 mb-6 flex items-center"><i class="fas fa-plus-circle mr-2 text-green-600"></i> Adicionar Novo Hospital</h3>
       <div class="space-y-4">
         <div><label class="block text-sm font-medium text-gray-700 mb-1">Nome do Hospital</label><input id="new-hospital-name" type="text" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:border-green-500 focus:ring focus:ring-green-200 transition"></div>
         <div><label class="block text-sm font-medium text-gray-700 mb-1">URL da Aba</label><input id="new-hospital-url" type="url" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:border-green-500 focus:ring focus:ring-green-200 transition"></div>
@@ -166,12 +166,9 @@
     </div>
   </div>
 
-  <!-- Modal Período Customizado -->
   <div id="custom-date-modal" class="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center hidden modal opacity-0 scale-95 z-50">
     <div class="glass rounded-2xl p-8 max-w-md w-full shadow-2xl border border-green-100">
-      <h3 class="text-xl font-bold text-green-800 mb-6 flex items-center">
-        <i class="fas fa-calendar-alt mr-2 text-green-600"></i> Escolher Período
-      </h3>
+      <h3 class="text-xl font-bold text-green-800 mb-6 flex items-center"><i class="fas fa-calendar-alt mr-2 text-green-600"></i> Escolher Período</h3>
       <div class="space-y-4">
         <div><label class="block text-sm font-medium text-gray-700 mb-1">Data Inicial</label><input id="custom-start" type="date" class="w-full px-4 py-2 border border-gray-300 rounded-md"></div>
         <div><label class="block text-sm font-medium text-gray-700 mb-1">Data Final</label><input id="custom-end" type="date" class="w-full px-4 py-2 border border-gray-300 rounded-md"></div>
@@ -197,7 +194,6 @@
         document.getElementById('username').value = config.username || '';
         document.getElementById('password').value = config.password || '';
         document.getElementById('email').value = config.email || '';
-        // Preenche agendamento recorrente
         if (config.schedule && config.schedule.startsWith('cron[')) {
           const params = config.schedule.slice(5, -1).trim();
           const [day, time] = params.split(' ');
@@ -228,25 +224,54 @@
         .then(data => {
           hospitals = data.hospitals || [];
           config = data.config || config;
-          applyData();
+          renderHospitals();
         })
         .catch(err => console.error('Erro carregando dados:', err));
     }
 
-    function applyData() {
-      renderHospitals();
+    function renderHospitals() {
+      const list = document.getElementById('hospital-list');
+      list.innerHTML = '';
+      hospitals.forEach((h, index) => {
+        const card = document.createElement('div');
+        card.className = 'p-5 bg-white/70 backdrop-blur-md rounded-xl border border-blue-100 shadow-md card-hover';
+        card.innerHTML = `
+          <div class="flex justify-between items-start mb-3">
+            <div><h3 class="text-lg font-bold text-blue-900">${h.name}</h3></div>
+            <button onclick="removeHospital(${index})" class="text-red-500 hover:text-red-700 transition"><i class="fas fa-trash-alt"></i></button>
+          </div>
+          <p class="text-xs text-blue-600 truncate">${h.url}</p>
+        `;
+        list.appendChild(card);
+      });
     }
 
-    // === SALVAR CONFIG COM AGENDAMENTO RECORRENTE ===
+    function addHospital() {
+      const name = document.getElementById('new-hospital-name').value.trim();
+      const url = document.getElementById('new-hospital-url').value.trim();
+      if (name && url) {
+        fetch(`${API_URL}/hospitals`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name, url })
+        }).then(() => {
+          loadData();
+          toggleAddHospitalModal();
+          document.getElementById('new-hospital-name').value = '';
+          document.getElementById('new-hospital-url').value = '';
+        });
+      } else alert('Preencha nome e URL!');
+    }
+
+    function removeHospital(index) {
+      fetch(`${API_URL}/hospitals/${index}`, { method: 'DELETE' })
+        .then(() => loadData());
+    }
+
     function saveConfig() {
       const day = document.getElementById('schedule-day').value;
       const time = document.getElementById('schedule-time').value;
-      if (day && time) {
-        config.schedule = `cron[${day} ${time}]`;
-      } else {
-        config.schedule = null;
-      }
-
+      config.schedule = (day && time) ? `cron[${day} ${time}]` : null;
       config.username = document.getElementById('username').value;
       config.password = document.getElementById('password').value;
       config.email = document.getElementById('email').value;
@@ -261,57 +286,12 @@
         alert(`Agendado! Relatório será enviado TODAS as ${dayName}s às ${time}`);
         toggleConfigModal();
       })
-      .catch(e => {
-        console.error(e);
-        alert('Erro ao salvar config');
-      });
+      .catch(() => alert('Erro ao salvar config'));
     }
 
-    function renderHospitals() {
-      const list = document.getElementById('hospital-list');
-      list.innerHTML = '';
-      hospitals.forEach((h, index) => {
-        const card = document.createElement('div');
-        card.className = 'p-5 bg-white/70 backdrop-blur-md rounded-xl border border-blue-100 shadow-md card-hover';
-        card.innerHTML = `
-          <div class="flex justify-between items-start mb-3">
-            <div>
-              <h3 class="text-lg font-bold text-blue-900">${h.name}</h3>
-              <p class="text-sm text-blue-700">Código: ${h.code || 'N/A'}</p>
-            </div>
-            <button onclick="removeHospital(${index})" class="text-red-500 hover:text-red-700 transition">
-              <i class="fas fa-trash-alt"></i>
-            </button>
-          </div>
-          <p class="text-xs text-blue-600 truncate">${h.url}</p>
-        `;
-        list.appendChild(card);
-      });
-    }
-
-    function addHospital() {
-      const name = document.getElementById('new-hospital-name').value;
-      const url = document.getElementById('new-hospital-url').value;
-      if (name && url) {
-        fetch(`${API_URL}/hospitals`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ name, url })
-        }).then(() => {
-          loadData();
-          toggleAddHospitalModal();
-        });
-      } else alert('Preencha nome e URL!');
-    }
-
-    function removeHospital(index) {
-      fetch(`${API_URL}/hospitals/${index}`, { method: 'DELETE' })
-        .then(() => loadData());
-    }
-
-    // === SSE RUN (semana passada) ===
+    // === EXECUÇÃO ===
     function runAutomation() {
-      if (runInProgress) { alert('Já em execução. Aguarde terminar.'); return; }
+      if (runInProgress) return alert('Já em execução. Aguarde terminar.');
       startSSERun({ mode: 'weekly' });
     }
 
@@ -319,9 +299,35 @@
       const start = document.getElementById('custom-start').value;
       const end = document.getElementById('custom-end').value;
       if (!start || !end) return alert('Selecione as duas datas!');
-      if (runInProgress) { alert('Já em execução. Aguarde terminar.'); return; }
+      if (runInProgress) return alert('Já em execução. Aguarde terminar.');
       startSSERun({ mode: 'custom', start, end });
       toggleCustomDateModal();
+    }
+
+    // NOVO: Botão Baixar Planilha Agora
+    function runAndDownload() {
+      if (runInProgress) return alert("Já tem uma execução em andamento. Aguarde terminar.");
+      document.getElementById('results').innerHTML = '';
+      startSSERun({ download: true }); // backend vai detectar e enviar o Excel
+    }
+
+    // TRATAMENTO DO ARQUIVO EXCEL
+    function handleExcelMessage(msg) {
+      const byteCharacters = atob(msg.data);
+      const byteNumbers = new Array(byteCharacters.length);
+      for (let i = 0; i < byteCharacters.length; i++) {
+        byteNumbers[i] = byteCharacters.charCodeAt(i);
+      }
+      const byteArray = new Uint8Array(byteNumbers);
+      const blob = new Blob([byteArray], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = msg.filename || 'Relatorio_Lavanderia_Hospitalar.xlsx';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
     }
 
     function startSSERun(params = { mode: 'weekly' }) {
@@ -335,14 +341,13 @@
       document.getElementById('progress-subtext').innerText = 'Conectando...';
       document.getElementById('progress-list').innerHTML = '';
       document.getElementById('results').innerHTML = '';
-      document.getElementById('btn-run').setAttribute('disabled', 'true');
-      document.getElementById('btn-custom').setAttribute('disabled', 'true');
+      document.getElementById('btn-run').disabled = true;
+      document.getElementById('btn-custom').disabled = true;
+      document.getElementById('btn-download').disabled = true;
 
       evtSource = new EventSource(url);
 
       let totalHosp = 0;
-      let current = 0;
-      let completed = [];
 
       evtSource.onmessage = function(e) {
         try {
@@ -353,12 +358,12 @@
             document.getElementById('progress-text').innerText = `Processando 0 / ${totalHosp}`;
             document.getElementById('progress-count').innerText = `0 / ${totalHosp}`;
             document.getElementById('progress-subtext').innerText = msg.note || '';
-          } else if (msg.type === 'progress') {
-            current = msg.current;
-            const percent = totalHosp ? Math.round((current / totalHosp) * 100) : 0;
+          } 
+          else if (msg.type === 'progress') {
+            const percent = totalHosp ? Math.round((msg.current / totalHosp) * 100) : 0;
             document.getElementById('progress-fill').style.width = `${percent}%`;
-            document.getElementById('progress-text').innerText = `Processando ${current} / ${totalHosp}`;
-            document.getElementById('progress-count').innerText = `${current} / ${totalHosp}`;
+            document.getElementById('progress-text').innerText = `Processando ${msg.current} / ${totalHosp}`;
+            document.getElementById('progress-count').innerText = `${msg.current} / ${totalHosp}`;
             document.getElementById('current-hospital').innerText = msg.hospital || '—';
             document.getElementById('progress-subtext').innerText = msg.status || '';
 
@@ -368,47 +373,59 @@
               item = document.createElement('div');
               item.id = `p-${msg.idx}`;
               item.className = 'p-2 rounded bg-blue-50 text-blue-700';
-              item.innerText = `${msg.idx}. ${msg.hospital} — ${msg.status}`;
               list.appendChild(item);
-            } else {
-              item.innerText = `${msg.idx}. ${msg.hospital} — ${msg.status}`;
             }
-          } else if (msg.type === 'done') {
+            item.innerText = `${msg.idx}. ${msg.hospital} — ${msg.status}`;
+          } 
+          else if (msg.type === 'done') {
             evtSource.close();
             runInProgress = false;
             document.getElementById('progress-subtext').innerText = 'Finalizado';
-            document.getElementById('btn-run').removeAttribute('disabled');
-            document.getElementById('btn-custom').removeAttribute('disabled');
-            if (msg.results) {
-              renderResults(msg.results, document.getElementById('results'));
-            }
-          } else if (msg.type === 'error') {
+            document.getElementById('btn-run').disabled = false;
+            document.getElementById('btn-custom').disabled = false;
+            document.getElementById('btn-download').disabled = false;
+            if (msg.results) renderResults(msg.results, document.getElementById('results'));
+          } 
+          else if (msg.type === 'excel') {
+            handleExcelMessage(msg);
+            evtSource.close();
+            runInProgress = false;
+            document.getElementById('progress-subtext').innerText = 'Planilha baixada com sucesso!';
+            document.getElementById('btn-run').disabled = false;
+            document.getElementById('btn-custom').disabled = false;
+            document.getElementById('btn-download').disabled = false;
+          }
+          else if (msg.type === 'error') {
             evtSource.close();
             runInProgress = false;
             document.getElementById('progress-subtext').innerText = `Erro: ${msg.error}`;
-            document.getElementById('btn-run').removeAttribute('disabled');
-            document.getElementById('btn-custom').removeAttribute('disabled');
+            document.getElementById('btn-run').disabled = false;
+            document.getElementById('btn-custom').disabled = false;
+            document.getElementById('btn-download').disabled = false;
             alert('Erro durante execução: ' + msg.error);
           }
         } catch (err) {
-          console.error('Mensagem SSE inválida', e.data, err);
+          console.error('Erro ao processar mensagem SSE', err);
         }
       };
 
-      evtSource.onerror = function(err) {
-        console.error('SSE error', err);
+      evtSource.onerror = function() {
         document.getElementById('progress-subtext').innerText = 'Conexão perdida com o servidor.';
+        evtSource.close();
+        runInProgress = false;
+        document.getElementById('btn-run').disabled = false;
+        document.getElementById('btn-custom').disabled = false;
+        document.getElementById('btn-download').disabled = false;
       };
     }
 
     function cancelRun() {
-      if (evtSource) {
-        evtSource.close();
-        runInProgress = false;
-        document.getElementById('progress-subtext').innerText = 'Cancelado pelo usuário.';
-        document.getElementById('btn-run').removeAttribute('disabled');
-        document.getElementById('btn-custom').removeAttribute('disabled');
-      }
+      if (evtSource) evtSource.close();
+      runInProgress = false;
+      document.getElementById('progress-subtext').innerText = 'Cancelado pelo usuário.';
+      document.getElementById('btn-run').disabled = false;
+      document.getElementById('btn-custom').disabled = false;
+      document.getElementById('btn-download').disabled = false;
     }
 
     function renderResults(data, container) {
