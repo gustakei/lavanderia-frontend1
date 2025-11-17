@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Automação Lavanderia Hospitalar</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <style>
+    body { font-family: 'Inter', sans-serif; background: linear-gradient(135deg, #e0f2fe, #f0f9ff); min-height: 100vh; }
+    .card-hover { transition: transform 0.3s ease, box-shadow 0.3s ease; }
+    .card-hover:hover { transform: translateY(-6px); box-shadow: 0 12px 30px rgba(37, 99, 235, 0.12); }
+    .glass { backdrop-filter: blur(14px); background: rgba(255, 255, 255, 0.8); border: 1px solid rgba(255, 255, 255, 0.3); }
+    .total-badge { background: linear-gradient(to right, #3B82F6, #2563EB); color: white; font-weight: 600; padding: 0.4rem 1rem; border-radius: 9999px; box-shadow: 0 4px 8px rgba(37, 99, 235, 0.3); }
+    .modal { transition: all 0.25s ease; }
+    .table-container { max-height: 300px; overflow-y: auto; border-radius: 0.5rem; border: 1px solid #E5E7EB; }
+    .hospital-container { max-height: 400px; overflow-y: auto; border: 1px solid #E5E7EB; border-radius: 0.5rem; padding: 1rem; background: white; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05); }
+    ::-webkit-scrollbar { width: 8px; }
+    ::-webkit-scrollbar-thumb { background-color: rgba(37, 99, 235, 0.4); border-radius: 9999px; }
+    /* Progresso */
+    .progress-track { background: #e6f0ff; border-radius: 9999px; height: 14px; overflow: hidden; }
+    .progress-fill { height: 100%; width: 0%; border-radius: 9999px; background: linear-gradient(90deg,#60a5fa,#2563eb); transition: width 300ms ease; }
+    .small-muted { color:#6b7280; font-size:0.875rem; }
+  </style>
+</head>
+<body class="p-6 md:p-12">
+
+  <div class="max-w-7xl mx-auto glass rounded-2xl shadow-2xl overflow-hidden border border-blue-100">
+
+    <!-- Header -->
+    <header class="bg-gradient-to-r from-blue-700 to-blue-800 p-6 text-white shadow-md">
+      <div class="flex justify-between items-center">
+        <h1 class="text-2xl md:text-3xl font-bold tracking-tight">
+          <i class="fa-solid fa-soap mr-2 text-blue-200"></i> Automação Lavanderia Hospitalar
+        </h1>
+        <div class="flex space-x-4">
+          <button id="btn-config" onclick="toggleConfigModal()" class="p-2 rounded-full hover:bg-blue-600 transition">
+            <i class="fas fa-cog fa-lg"></i>
+          </button>
+          <button id="btn-add" onclick="toggleAddHospitalModal()" class="p-2 rounded-full hover:bg-blue-600 transition">
+            <i class="fas fa-plus-circle fa-lg"></i>
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <!-- Conteúdo Principal -->
+    <main class="p-6 md:p-10 space-y-8">
+
+      <!-- Hospitais -->
+      <section>
+        <h2 class="text-xl font-semibold text-blue-800 mb-6 flex items-center">
+          <i class="fas fa-hospital-user mr-2 text-blue-600"></i> Hospitais Cadastrados
+        </h2>
+        <div class="hospital-container">
+          <div id="hospital-list" class="grid grid-cols-1 gap-6"></div>
+        </div>
+      </section>
+
+      <!-- Resultados e Controle -->
+      <section>
+        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
+          <div>
+            <h2 class="text-xl font-semibold text-blue-800 mb-2 flex items-center">
+              <i class="fas fa-chart-bar mr-2 text-blue-600"></i> Resultados
+            </h2>
+            <p class="small-muted">Execute e acompanhe o progresso em tempo real.</p>
+          </div>
+
+          <!-- Botões principais -->
+          <div class="flex gap-3">
+            <button id="btn-run" onclick="runAutomation()" class="px-6 py-3 rounded-xl font-semibold text-white bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 shadow-lg transition transform hover:scale-105 focus:outline-none">
+              <i class="fas fa-robot mr-2"></i> Executar (Semana Passada)
+            </button>
+            <button id="btn-custom" onclick="toggleCustomDateModal()" class="px-6 py-3 rounded-xl font-semibold text-white bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 shadow-lg transition transform hover:scale-105 focus:outline-none">
+              <i class="fas fa-calendar-alt mr-2"></i> Escolher Período
+            </button>
+          </div>
+        </div>
+
+        <!-- Progresso SSE -->
+        <div id="progress-wrapper" class="mt-6 hidden">
+          <div class="bg-white p-4 rounded-xl shadow-md border border-blue-50">
+            <div class="flex justify-between items-center mb-3">
+              <div>
+                <div id="progress-text" class="font-medium text-blue-900">Processando 0/0</div>
+                <div id="progress-subtext" class="text-sm small-muted">Pronto para iniciar</div>
+              </div>
+              <div class="text-right">
+                <div id="current-hospital" class="font-semibold text-blue-700">—</div>
+              </div>
+            </div>
+
+            <div class="progress-track mb-3" aria-hidden="true">
+              <div id="progress-fill" class="progress-fill" style="width:0%"></div>
+            </div>
+
+            <div class="flex items-center gap-4">
+              <div id="progress-count" class="text-sm small-muted">0 / 0</div>
+              <div class="ml-auto flex items-center gap-2">
+                <button id="btn-cancel" onclick="cancelRun()" class="px-3 py-1 rounded-md bg-red-50 text-red-600 hover:bg-red-100 transition hidden">Cancelar</button>
+              </div>
+            </div>
+
+            <div id="progress-list" class="mt-4 grid grid-cols-2 gap-2 text-sm small-muted max-h-40 overflow-auto"></div>
+          </div>
+        </div>
+
+        <!-- Result cards -->
+        <div id="results" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-6"></div>
+      </section>
+    </main>
+  </div>
+
+  <!-- Modal Configurações -->
+  <div id="config-modal" class="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center hidden modal opacity-0 scale-95 z-50">
+    <div class="glass rounded-2xl p-8 max-w-md w-full shadow-2xl border border-blue-100">
+      <h3 class="text-xl font-bold text-blue-800 mb-6 flex items-center">
+        <i class="fas fa-cog mr-2 text-blue-600"></i> Configurações Gerais
+      </h3>
+      <div class="space-y-4">
+        <div><label class="block text-sm font-medium text-gray-700 mb-1">Usuário Login</label><input id="username" type="text" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:border-blue-500 focus:ring focus:ring-blue-200 transition"></div>
+        <div><label class="block text-sm font-medium text-gray-700 mb-1">Senha Login</label><input id="password" type="password" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:border-blue-500 focus:ring focus:ring-blue-200 transition"></div>
+        <div><label class="block text-sm font-medium text-gray-700 mb-1">Email Destinatário</label><input id="email" type="email" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:border-blue-500 focus:ring focus:ring-blue-200 transition"></div>
+        <div><label class="block text-sm font-medium text-gray-700 mb-1">Horário Automático</label><input id="schedule" type="datetime-local" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:border-blue-500 focus:ring focus:ring-blue-200 transition"></div>
+      </div>
+      <div class="mt-6 flex justify-end space-x-3">
+        <button onclick="toggleConfigModal()" class="px-6 py-2 rounded-md bg-gray-200 text-gray-800 hover:bg-gray-300 transition">Cancelar</button>
+        <button onclick="saveConfig()" class="px-6 py-2 rounded-md bg-blue-600 text-white hover:bg-blue-700 shadow-md transition">Salvar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Adicionar Hospital -->
+  <div id="add-hospital-modal" class="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center hidden modal opacity-0 scale-95 z-50">
+    <div class="glass rounded-2xl p-8 max-w-md w-full shadow-2xl border border-green-100">
+      <h3 class="text-xl font-bold text-green-800 mb-6 flex items-center">
+        <i class="fas fa-plus-circle mr-2 text-green-600"></i> Adicionar Novo Hospital
+      </h3>
+      <div class="space-y-4">
+        <div><label class="block text-sm font-medium text-gray-700 mb-1">Nome do Hospital</label><input id="new-hospital-name" type="text" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:border-green-500 focus:ring focus:ring-green-200 transition"></div>
+        <div><label class="block text-sm font-medium text-gray-700 mb-1">URL da Aba</label><input id="new-hospital-url" type="url" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:border-green-500 focus:ring focus:ring-green-200 transition"></div>
+      </div>
+      <div class="mt-6 flex justify-end space-x-3">
+        <button onclick="toggleAddHospitalModal()" class="px-6 py-2 rounded-md bg-gray-200 text-gray-800 hover:bg-gray-300 transition">Cancelar</button>
+        <button onclick="addHospital()" class="px-6 py-2 rounded-md bg-green-600 text-white hover:bg-green-700 shadow-md transition">Adicionar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Escolher Período -->
+  <div id="custom-date-modal" class="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center hidden modal opacity-0 scale-95 z-50">
+    <div class="glass rounded-2xl p-8 max-w-md w-full shadow-2xl border border-green-100">
+      <h3 class="text-xl font-bold text-green-800 mb-6 flex items-center">
+        <i class="fas fa-calendar-alt mr-2 text-green-600"></i> Escolher Período
+      </h3>
+      <div class="space-y-4">
+        <div><label class="block text-sm font-medium text-gray-700 mb-1">Data Início</label><input id="custom-start" type="date" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:border-green-500 focus:ring focus:ring-green-200 transition"></div>
+        <div><label class="block text-sm font-medium text-gray-700 mb-1">Data Fim</label><input id="custom-end" type="date" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:border-green-500 focus:ring focus:ring-green-200 transition"></div>
+      </div>
+      <div class="mt-6 flex justify-end space-x-3">
+        <button onclick="toggleCustomDateModal()" class="px-6 py-2 rounded-md bg-gray-200 text-gray-800 hover:bg-gray-300 transition">Cancelar</button>
+        <button onclick="runCustomAutomation()" class="px-6 py-2 rounded-md bg-green-600 text-white hover:bg-green-700 shadow-md transition">Executar</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Ajuste a API_URL para o backend real (ex.: http://localhost:5000/api)
+    const API_URL = 'https://lavanderia-backend-4.onrender.com/api';
+
+    let hospitals = [];
+    let config = { username: '', password: '', email: '', schedule: '' };
+    let evtSource = null;
+    let runInProgress = false;
+
+    function toggleConfigModal() {
+      const modal = document.getElementById('config-modal');
+      modal.classList.toggle('hidden');
+      setTimeout(() => modal.classList.toggle('opacity-0'), 10);
+      setTimeout(() => modal.classList.toggle('scale-95'), 10);
+    }
+
+    function toggleAddHospitalModal() {
+      const modal = document.getElementById('add-hospital-modal');
+      modal.classList.toggle('hidden');
+      setTimeout(() => modal.classList.toggle('opacity-0'), 10);
+      setTimeout(() => modal.classList.toggle('scale-95'), 10);
+    }
+
+    function toggleCustomDateModal() {
+      const modal = document.getElementById('custom-date-modal');
+      modal.classList.toggle('hidden');
+      setTimeout(() => modal.classList.toggle('opacity-0'), 10);
+      setTimeout(() => modal.classList.toggle('scale-95'), 10);
+
+      const hoje = new Date();
+      const fim = new Date(hoje);
+      fim.setDate(hoje.getDate() - (hoje.getDay() || 7));
+      const inicio = new Date(fim);
+      inicio.setDate(fim.getDate() - 6);
+
+      document.getElementById('custom-start').value = inicio.toISOString().split('T')[0];
+      document.getElementById('custom-end').value = fim.toISOString().split('T')[0];
+    }
+
+    function copyToClipboard(text) {
+      navigator.clipboard.writeText(text).then(() => alert('Total copiado: ' + text));
+    }
+
+    function loadData() {
+      fetch(`${API_URL}/data`)
+        .then(res => res.json())
+        .then(data => {
+          hospitals = data.hospitals || [];
+          config = data.config || config;
+          document.getElementById('username').value = config.username || '';
+          document.getElementById('password').value = config.password || '';
+          document.getElementById('email').value = config.email || '';
+          document.getElementById('schedule').value = config.schedule || '';
+          renderHospitals();
+        })
+        .catch(err => console.error('Erro carregando dados:', err));
+    }
+
+    function saveConfig() {
+  const scheduleValue = document.getElementById('schedule').value;
+  if (scheduleValue) {
+    const selected = new Date(scheduleValue);
+    const now = new Date();
+    if (selected <= now) {
+      alert('Escolha um horário futuro!');
+      return;
+    }
+  }
+
+  config.username = document.getElementById('username').value;
+  config.password = document.getElementById('password').value;
+  config.email = document.getElementById('email').value;
+  config.schedule = scheduleValue;
+
+  fetch(`${API_URL}/config`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(config)
+  })
+  .then(() => {
+    alert('Configurações salvas! Relatório agendado para: ' + (scheduleValue ? new Date(scheduleValue).toLocaleString() : 'não definido'));
+    toggleConfigModal();
+  })
+  .catch(e => {
+    console.error(e);
+    alert('Erro ao salvar config');
+  });
+}
+    function renderHospitals() {
+      const list = document.getElementById('hospital-list');
+      list.innerHTML = '';
+      hospitals.forEach((h, index) => {
+        const card = document.createElement('div');
+        card.className = 'p-5 bg-white/70 backdrop-blur-md rounded-xl border border-blue-100 shadow-md card-hover';
+        card.innerHTML = `
+          <div class="flex justify-between items-start mb-3">
+            <div>
+              <h3 class="text-lg font-bold text-blue-900">${h.name}</h3>
+              <p class="text-sm text-blue-700">Código: ${h.code || 'N/A'}</p>
+            </div>
+            <button onclick="removeHospital(${index})" class="text-red-500 hover:text-red-700 transition">
+              <i class="fas fa-trash-alt"></i>
+            </button>
+          </div>
+          <p class="text-xs text-blue-600 truncate">${h.url}</p>
+        `;
+        list.appendChild(card);
+      });
+    }
+
+    function addHospital() {
+      const name = document.getElementById('new-hospital-name').value;
+      const url = document.getElementById('new-hospital-url').value;
+      if (name && url) {
+        fetch(`${API_URL}/hospitals`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name, url })
+        }).then(() => {
+          loadData();
+          toggleAddHospitalModal();
+        });
+      } else alert('Preencha nome e URL!');
+    }
+
+    function removeHospital(index) {
+      fetch(`${API_URL}/hospitals/${index}`, { method: 'DELETE' })
+        .then(() => loadData());
+    }
+
+    // === SSE RUN (semana passada) ===
+    function runAutomation() {
+      if (runInProgress) { alert('Já em execução. Aguarde terminar.'); return; }
+      startSSERun({ mode: 'weekly' });
+    }
+
+    // === SSE RUN CUSTOM ===
+    function runCustomAutomation() {
+      const start = document.getElementById('custom-start').value;
+      const end = document.getElementById('custom-end').value;
+      if (!start || !end) return alert('Selecione as duas datas!');
+      if (runInProgress) { alert('Já em execução. Aguarde terminar.'); return; }
+      startSSERun({ mode: 'custom', start, end });
+      toggleCustomDateModal();
+    }
+
+    function startSSERun(params = { mode: 'weekly' }) {
+      // montar query string
+      const qs = new URLSearchParams(params).toString();
+      const url = `${API_URL.replace('/api','')}/api/run-stream?${qs}`; // keep base consistent
+
+      // UI init
+      runInProgress = true;
+      document.getElementById('progress-wrapper').classList.remove('hidden');
+      document.getElementById('progress-fill').style.width = '0%';
+      document.getElementById('progress-text').innerText = 'Processando 0/0';
+      document.getElementById('progress-subtext').innerText = 'Conectando...';
+      document.getElementById('progress-list').innerHTML = '';
+      document.getElementById('results').innerHTML = '';
+      document.getElementById('btn-run').setAttribute('disabled', 'true');
+      document.getElementById('btn-custom').setAttribute('disabled', 'true');
+
+      evtSource = new EventSource(url);
+
+      let totalHosp = 0;
+      let current = 0;
+      let completed = [];
+
+      evtSource.onmessage = function(e) {
+        // mensagens enviadas como JSON strings
+        try {
+          const msg = JSON.parse(e.data);
+
+          if (msg.type === 'meta') {
+            totalHosp = msg.total;
+            document.getElementById('progress-text').innerText = `Processando 0 / ${totalHosp}`;
+            document.getElementById('progress-count').innerText = `0 / ${totalHosp}`;
+            document.getElementById('progress-subtext').innerText = msg.note || '';
+          } else if (msg.type === 'progress') {
+            current = msg.current;
+            const percent = totalHosp ? Math.round((current / totalHosp) * 100) : 0;
+            document.getElementById('progress-fill').style.width = `${percent}%`;
+            document.getElementById('progress-text').innerText = `Processando ${current} / ${totalHosp}`;
+            document.getElementById('progress-count').innerText = `${current} / ${totalHosp}`;
+            document.getElementById('current-hospital').innerText = msg.hospital || '—';
+            document.getElementById('progress-subtext').innerText = msg.status || '';
+
+            // adicionar entrada na lista de progresso se não existir
+            const list = document.getElementById('progress-list');
+            let item = document.getElementById(`p-${msg.idx}`);
+            if (!item) {
+              item = document.createElement('div');
+              item.id = `p-${msg.idx}`;
+              item.className = 'p-2 rounded bg-blue-50 text-blue-700';
+              item.innerText = `${msg.idx}. ${msg.hospital} — ${msg.status}`;
+              list.appendChild(item);
+            } else {
+              item.innerText = `${msg.idx}. ${msg.hospital} — ${msg.status}`;
+            }
+          } else if (msg.type === 'done') {
+            // recebe resultados completos no campo results
+            evtSource.close();
+            runInProgress = false;
+            document.getElementById('progress-subtext').innerText = 'Finalizado';
+            document.getElementById('btn-run').removeAttribute('disabled');
+            document.getElementById('btn-custom').removeAttribute('disabled');
+            // renderizar resultados
+            if (msg.results) {
+              renderResults(msg.results, document.getElementById('results'));
+            }
+          } else if (msg.type === 'error') {
+            evtSource.close();
+            runInProgress = false;
+            document.getElementById('progress-subtext').innerText = `Erro: ${msg.error}`;
+            document.getElementById('btn-run').removeAttribute('disabled');
+            document.getElementById('btn-custom').removeAttribute('disabled');
+            alert('Erro durante execução: ' + msg.error);
+          }
+        } catch (err) {
+          console.error('Menssagem SSE inválida', e.data, err);
+        }
+      };
+
+      evtSource.onerror = function(err) {
+        console.error('SSE error', err);
+        document.getElementById('progress-subtext').innerText = 'Conexão perdida com o servidor.';
+        // não fechar automaticamente: deixe o servidor fechar ou usuário reconectar
+      };
+    }
+
+    function cancelRun() {
+      if (evtSource) {
+        evtSource.close();
+        runInProgress = false;
+        document.getElementById('progress-subtext').innerText = 'Cancelado pelo usuário.';
+        document.getElementById('btn-run').removeAttribute('disabled');
+        document.getElementById('btn-custom').removeAttribute('disabled');
+      }
+    }
+
+    function renderResults(data, container) {
+      container.innerHTML = '';
+      data.forEach(r => {
+        const card = document.createElement('div');
+        card.className = 'bg-white p-6 rounded-2xl shadow-lg card-hover border border-blue-100';
+        card.innerHTML = `
+          <div class="flex justify-between items-center mb-4">
+            <h3 class="text-xl font-bold text-blue-900">${r.hospital}</h3>
+            <span class="total-badge">${(r.total || 0).toFixed(2)} kg</span>
+          </div>
+          <p class="text-sm text-gray-600 mb-2">Período: ${r.periodo}</p>
+          <button onclick="copyToClipboard('${(r.total||0).toFixed(2)}')" class="mb-4 w-full bg-blue-600 text-white py-2 rounded-lg font-medium hover:bg-blue-700 transition flex items-center justify-center">
+            <i class="fas fa-copy mr-2"></i> Copiar Total
+          </button>
+          <div class="table-container">
+            <table class="w-full text-sm">
+              <thead class="bg-blue-50 text-blue-700 sticky top-0">
+                <tr><th class="p-3 text-left font-semibold">Data</th><th class="p-3 text-right font-semibold">Kg Suja</th></tr>
+              </thead>
+              <tbody class="divide-y divide-gray-200">
+                ${ (r.dados || []).map(d => `<tr class="hover:bg-blue-50 transition"><td class="p-3">${d.data}</td><td class="p-3 text-right font-medium">${(d.kg||0).toFixed(2)}</td></tr>`).join('') }
+              </tbody>
+            </table>
+          </div>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    // inicializa dados
+    loadData();
+  </script>
+</body>
+</html>
